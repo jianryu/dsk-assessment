@@ -1,10 +1,12 @@
 import { useState } from 'react';
 
-const EmailCollectionForm = ({ answers, onSubmit }) => {
-  const [email, setEmail] = useState('');
+const EmailCollectionForm = ({ answers, score, onSubmit }) => {
+  const [formData, setFormData] = useState({
+    email: '',
+    name: ''
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -12,23 +14,25 @@ const EmailCollectionForm = ({ answers, onSubmit }) => {
     setError('');
 
     try {
-      const response = await fetch('/api/submit-assessment', {
+      // Submit to Kajabi
+      const kajabiResponse = await fetch('/api/kajabi-signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email,
-          answers
+          email: formData.email,
+          name: formData.name,
+          answers,
+          score
         }),
       });
 
-      if (!response.ok) {
+      if (!kajabiResponse.ok) {
         throw new Error('제출 중 오류가 발생했습니다');
       }
 
-      setSuccess(true);
-      onSubmit?.();
+      onSubmit();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -36,19 +40,27 @@ const EmailCollectionForm = ({ answers, onSubmit }) => {
     }
   };
 
-  if (success) {
-    return (
-      <div className="text-center p-4">
-        <h3 className="text-xl font-bold text-green-600 mb-2">제출이 완료되었습니다!</h3>
-        <p>입력하신 이메일로 상세한 분석 결과를 보내드리겠습니다.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-md mx-auto p-4">
       <h3 className="text-xl font-bold mb-4">분석 결과 받아보기</h3>
+      <p className="mb-4">상세한 분석 결과를 이메일로 받아보세요!</p>
+      
       <form onSubmit={handleSubmit}>
+        <div className="mb-4">
+          <label htmlFor="name" className="block text-sm font-medium mb-1">
+            이름
+          </label>
+          <input
+            type="text"
+            id="name"
+            value={formData.name}
+            onChange={(e) => setFormData({...formData, name: e.target.value})}
+            className="w-full px-3 py-2 border rounded-md"
+            required
+            placeholder="홍길동"
+          />
+        </div>
+
         <div className="mb-4">
           <label htmlFor="email" className="block text-sm font-medium mb-1">
             이메일 주소
@@ -56,18 +68,18 @@ const EmailCollectionForm = ({ answers, onSubmit }) => {
           <input
             type="email"
             id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={formData.email}
+            onChange={(e) => setFormData({...formData, email: e.target.value})}
             className="w-full px-3 py-2 border rounded-md"
             required
             placeholder="your@email.com"
           />
         </div>
+
         {error && (
-          <div className="text-red-600 mb-4">
-            {error}
-          </div>
+          <div className="text-red-600 mb-4">{error}</div>
         )}
+
         <button
           type="submit"
           disabled={isSubmitting}
